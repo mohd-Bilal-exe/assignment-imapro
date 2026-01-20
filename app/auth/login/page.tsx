@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
@@ -34,8 +35,8 @@ export default function Login() {
       if (result.success) {
         showAlert('success', 'Login successful! Redirecting...');
         setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
+          window.location.href = '/dashboard';
+        }, 1500);
       } else {
         showAlert('danger', result.message || 'Login failed');
       }
@@ -47,36 +48,76 @@ export default function Login() {
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="space-y-6 w-full">
       {alert.message && (
-        <div className={`p-3 mb-4 rounded ${alert.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-          {alert.message}
+        <div
+          className={`p-4 rounded-xl border animate-slide-in-down ${
+            alert.type === 'success'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="text-xl">{alert.type === 'success' ? '✓' : '✕'}</div>
+            <span className="font-medium text-sm sm:text-base">{alert.message}</span>
+          </div>
         </div>
       )}
-      
+
       <form onSubmit={handleLogin} className="space-y-4">
-        <input
-          id="loginEmail"
-          type="email"
-          placeholder="Email"
-          required
-          className="w-full p-3 border rounded text-black"
-        />
-        <input
-          id="loginPassword"
-          type="password"
-          placeholder="Password"
-          required
-          className="w-full p-3 border rounded text-black"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {loading ? 'Logging in...' : 'Login'}
+        <div>
+          <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300 text-sm">
+            Email Address
+          </label>
+          <input
+            id="loginEmail"
+            type="email"
+            placeholder="you@example.com"
+            required
+            className="input-field"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-2 font-semibold text-gray-700 dark:text-gray-300 text-sm">
+            Password
+          </label>
+          <input
+            id="loginPassword"
+            type="password"
+            placeholder="••••••••"
+            required
+            className="input-field"
+          />
+        </div>
+
+        <button type="submit" disabled={loading} className="justify-center w-full btn-primary">
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <span className="inline-block border-2 border-transparent border-t-white rounded-full w-4 h-4 animate-spin"></span>
+              Signing in...
+            </span>
+          ) : (
+            'Sign In'
+          )}
         </button>
       </form>
+
+      <div className="flex items-center gap-3">
+        <div className="flex-1 bg-gray-200 dark:bg-slate-700 h-px"></div>
+        <span className="font-medium text-gray-500 dark:text-gray-400 text-xs">OR</span>
+        <div className="flex-1 bg-gray-200 dark:bg-slate-700 h-px"></div>
+      </div>
+
+      <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
+        Don't have an account?{' '}
+        <Link
+          href="/auth/signup"
+          className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          Create one
+        </Link>
+      </p>
     </div>
   );
 }

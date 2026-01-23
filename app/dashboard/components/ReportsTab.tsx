@@ -4,6 +4,7 @@ import { Braces, Check, Eraser, FileAxis3d, Hourglass, Mails, RefreshCcw, X } fr
 import { useState, useEffect } from 'react';
 
 export default function ReportsTab() {
+  const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState([]);
   const [stats, setStats] = useState({ total: 0, sent: 0, failed: 0, pending: 0 });
 
@@ -12,48 +13,28 @@ export default function ReportsTab() {
   }, []);
 
   const loadReports = async () => {
-    // Mock reports Data
-    const mockReports = [
-      {
-        id: 1,
-        email: 'user1@example.com',
-        status: 'sent',
-        name: 'John Doe',
-        company: 'ABC Corp',
-        subject: 'Welcome',
-        timestamp: new Date().toISOString(),
-        error: null,
-      },
-      {
-        id: 2,
-        email: 'user2@example.com',
-        status: 'failed',
-        name: 'Jane Smith',
-        company: 'XYZ Inc',
-        subject: 'Welcome',
-        timestamp: new Date().toISOString(),
-        error: 'Invalid email',
-      },
-      {
-        id: 3,
-        email: 'ceo@tech.com',
-        status: 'pending',
-        name: 'Bob Wilson',
-        company: 'Tech Lyfe',
-        subject: 'Welcome',
-        timestamp: new Date().toISOString(),
-        error: null,
-      },
-    ];
-    setReports(mockReports as any);
-    setStats({
-      total: mockReports.length,
-      sent: mockReports.filter(r => r.status === 'sent').length,
-      failed: mockReports.filter(r => r.status === 'failed').length,
-      pending: mockReports.filter(r => r.status === 'pending').length,
-    });
-  };
+    try {
+      const res = await fetch('/api/dashboard/reports');
+      const data = await res.json();
+      const reportsData = data?.reports || [];
 
+      setReports(reportsData as any);
+      setStats({
+        total: reportsData.length,
+        sent: reportsData.filter((r: any) => r.status === 'sent').length,
+        failed: reportsData.filter((r: any) => r.status === 'failed').length,
+        pending: reportsData.filter((r: any) => r.status === 'pending').length,
+      });
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to load reports', err);
+    }
+  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center w-full h-full"> Loading... </div>
+    );
+  }
   const StatCard = ({ title, value, color, icon }: any) => {
     const colors: any = {
       blue: 'bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50',
@@ -82,10 +63,32 @@ export default function ReportsTab() {
       <div className="flex sm:flex-row flex-col sm:justify-between sm:items-center gap-4 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md p-6 border border-gray-100 dark:border-slate-700 rounded-3xl transition-all">
         <h3 className="font-bold text-gray-900 dark:text-white text-xl">📊 Email Reports</h3>
         <div className="flex flex-wrap gap-2">
-          <button className="flex items-center gap-2 btn-secondary">
+          <button
+            className="flex items-center gap-2 btn-secondary"
+            onClick={async () => {
+              // export csv
+              const res = await fetch('/api/dashboard/export?format=csv');
+              if (res.ok) {
+                alert('Export initiated (CSV)');
+              } else {
+                alert('Export failed');
+              }
+            }}
+          >
             <FileAxis3d className="w-4 h-4" /> CSV
           </button>
-          <button className="flex items-center gap-2 btn-secondary">
+          <button
+            className="flex items-center gap-2 btn-secondary"
+            onClick={async () => {
+              // export json
+              const res = await fetch('/api/dashboard/export?format=json');
+              if (res.ok) {
+                alert('Export initiated (JSON)');
+              } else {
+                alert('Export failed');
+              }
+            }}
+          >
             <Braces className="w-4 h-4" /> JSON
           </button>
           <button
@@ -95,7 +98,18 @@ export default function ReportsTab() {
             <RefreshCcw className="w-4 h-4" />
             Refresh
           </button>
-          <button className="flex items-center gap-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 hover:shadow-md px-4 py-2 rounded-lg font-semibold text-red-700 dark:text-red-400 text-sm transition-all">
+          <button
+            className="flex items-center gap-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 hover:shadow-md px-4 py-2 rounded-lg font-semibold text-red-700 dark:text-red-400 text-sm transition-all"
+            onClick={async () => {
+              const res = await fetch('/api/dashboard/logs/clear', { method: 'POST' });
+              if (res.ok) {
+                alert('Logs cleared');
+                loadReports();
+              } else {
+                alert('Clear failed');
+              }
+            }}
+          >
             <Eraser className="w-4 h-4" /> Clear
           </button>
         </div>
@@ -135,13 +149,12 @@ export default function ReportsTab() {
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold capitalize transition-all
-                      ${
-                        report.status === 'sent'
+                      ${report.status === 'sent'
                           ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                           : report.status === 'failed'
                             ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                             : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                      }`}
+                        }`}
                     >
                       {report.status}
                     </span>

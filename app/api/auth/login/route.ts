@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authService } from '@/lib/authService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,18 +12,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mock authentication - replace with real auth logic
-    if (email === 'test@example.com' && password === 'password') {
-      return NextResponse.json({ success: true, message: 'Login successful' });
-    }
-
-    return NextResponse.json(
-      { success: false, message: 'Invalid credentials' },
-      { status: 401 }
-    );
+    return await authService.login(email, password);
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { success: false, message: 'Login failed' },
       { status: 500 }
     );
   }

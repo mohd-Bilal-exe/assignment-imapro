@@ -6,7 +6,7 @@ import Link from 'next/link';
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ type: '', message: '' });
-
+const [formData, setFormData]=useState({email:"", password:""})
   const showAlert = (type: string, message: string) => {
     setAlert({ type, message });
   };
@@ -14,15 +14,20 @@ export default function Login() {
   const clearAlert = () => {
     setAlert({ type: '', message: '' });
   };
-
+const debouncedInput=(key:string, value:string)=>{
+    setTimeout(()=>setFormData((prev)=>({...prev, [key]:value})), 300)
+}
   async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
     clearAlert();
     setLoading(true);
 
-    const email = (document.getElementById('loginEmail') as HTMLInputElement).value;
-    const password = (document.getElementById('loginPassword') as HTMLInputElement).value;
-
+    const { email, password } = formData;
+    if (!email || !password) {
+      showAlert('danger', 'Please fill in all fields.');
+      setLoading(false);
+      return;
+    }
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -74,6 +79,7 @@ export default function Login() {
             type="email"
             placeholder="you@example.com"
             required
+            onChange={(e) => debouncedInput("email", e.target.value)}
             className="input-field"
           />
         </div>
@@ -87,6 +93,7 @@ export default function Login() {
             type="password"
             placeholder="••••••••"
             required
+            onChange={(e) => debouncedInput("password", e.target.value)}
             className="input-field"
           />
         </div>

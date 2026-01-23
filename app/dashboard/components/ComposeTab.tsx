@@ -1,18 +1,66 @@
 'use client';
 
 import { Eye, File, FileSliders, MailPlus, Send, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ComposeTab() {
+  const [loading, setLoading] = useState(true);
   const [selectedConfig, setSelectedConfig] = useState('');
   const [showNewConfig, setShowNewConfig] = useState(false);
   const [useBatch, setUseBatch] = useState(false);
   const [scheduleEmail, setScheduleEmail] = useState(false);
+  const [configs, setConfigs] = useState<any[]>([]);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/dashboard/configs');
+        const data = await res.json();
+        setLoading(false);
+        setConfigs(data?.configs || []);
+      } catch (err) {
+        console.error('Failed to load configs', err);
+      }
+    };
+
+    load();
+  }, []);
   const handleSendEmails = async () => {
-    alert('Email sending functionality to be implemented, Backend to be connected');
-  };
+    if (!selectedConfig) return alert('Select SMTP configuration');
+    try {
+      const payload = {
+        configId: selectedConfig,
+        subject,
+        body,
+        useBatch,
+        schedule: scheduleEmail ? true : false,
+      };
 
+      const res = await fetch('/api/dashboard/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || 'Emails queued');
+      } else {
+        alert(data.message || 'Send failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Send failed');
+    }
+  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center w-full h-full"> Loading... </div>
+    );
+  }
   const inputClasses =
     'w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500';
   const labelClasses = 'block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 ml-1';
@@ -40,8 +88,9 @@ export default function ComposeTab() {
                   onChange={e => setSelectedConfig(e.target.value)}
                 >
                   <option value="">Choose configuration...</option>
-                  <option value="gmail">Gmail Config</option>
-                  <option value="outlook">Outlook Config</option>
+                  {configs.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
                 </select>
               </div>
 
@@ -207,6 +256,8 @@ export default function ComposeTab() {
                 <label className={labelClasses}>Subject Line</label>
                 <input
                   type="text"
+                  value={subject}
+                  onChange={e => setSubject(e.target.value)}
                   placeholder="Hello {{FirstName}}, welcome to {{Company}}!"
                   className={`${inputClasses} font-medium`}
                 />
@@ -216,6 +267,8 @@ export default function ComposeTab() {
                 <label className={labelClasses}>Body</label>
                 <textarea
                   rows={12}
+                  value={body}
+                  onChange={e => setBody(e.target.value)}
                   placeholder="Start typing your email content..."
                   className={`${inputClasses} font-mono text-sm leading-relaxed resize-y`}
                 />

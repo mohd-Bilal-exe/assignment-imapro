@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authService } from '@/lib/authService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,22 +12,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Mock registration - replace with real database logic
-    if (email === 'existing@example.com') {
-      return NextResponse.json(
-        { success: false, message: 'Email already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Simulate successful registration
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Account created successfully' 
-    });
+    return await authService.register(name, email, password);
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: 'Server error' },
+      { success: false, message: 'Registration failed' },
       { status: 500 }
     );
   }

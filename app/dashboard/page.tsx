@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ComposeTab from './components/ComposeTab';
 import ReportsTab from './components/ReportsTab';
 import ConfigsTab from './components/ConfigsTab';
@@ -8,15 +8,68 @@ import { Info, Mail, Settings, SquarePen, LogOut } from 'lucide-react';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('compose');
-
+  const [alert, setAlert] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false);
   const tabs = [
     { id: 'compose', label: 'Compose', icon: <SquarePen className="w-4 h-4" /> },
     { id: 'reports', label: 'Reports', icon: <Info className="w-4 h-4" /> },
     { id: 'configs', label: 'Configs', icon: <Settings className="w-4 h-4" /> },
   ];
+  const showAlert = (type: string, message: string) => {
+    setAlert({ type, message });
+  };
 
+  const clearAlert = () => {
+    console.log('Clearing alert');
+    setAlert({ type: '', message: '' });
+  };
+  useEffect(() => {
+    // Check Auth
+    try {
+      setLoading(true)
+      fetch('/api/auth/me', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      }).then(async (res) => {
+        const result = await res.json()
+        if (!result.authenticated) {
+          setLoading(false)
+          showAlert('danger', 'Authentication check failed. Redirecting to login.')
+          setTimeout(() => {
+            window.location.href = '/auth/login'
+          }, 1500);
+        }
+      })
+    } catch (err) {
+      setLoading(false)
+      showAlert('danger', 'Authentication check failed. Redirecting to login.')
+      setTimeout(() => {
+        window.location.href = '/auth/login'
+      }, 1500);
+    }
+  }, [])
+  if(loading){
+    return (
+      <div className="flex justify-center items-center min-h-screen"> Loading... </div>
+    )
+  }
   return (
     <div className="bg-linear-to-br from-slate-50 dark:from-slate-950 to-slate-100 dark:to-slate-900 min-h-screen text-gray-900 dark:text-gray-100 transition-colors duration-200">
+      {alert.message && (
+        <div className="z-100 fixed inset-0 flex justify-center items-center backdrop-blur-lg px-4 pt-6 w-dvw h-dvh">
+          <div
+            className={`p-4  rounded-xl border animate-slide-in-down flex flex-col gap-3 justify-end ${alert.type === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+              }`}
+          >
+
+            <div className="flex items-center gap-3">
+              <div className="text-xl">{alert.type === 'success' ? '✔️' : '❌'}</div>
+              <span className="font-medium text-sm sm:text-base">{alert.message}</span>
+            </div><button onClick={clearAlert} className='bg-red-500/5 py-1 rounded-2xl font-bold cursor-pointer'>Close</button>
+          </div></div>
+      )}
       <nav className="top-0 z-50 sticky bg-white/95 dark:bg-slate-900/95 shadow-sm backdrop-blur-lg border-gray-200 dark:border-slate-800 border-b">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4 container">
           <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center gap-4">
@@ -35,10 +88,9 @@ export default function Dashboard() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-3xl text-sm font-medium transition-all duration-200
-                    ${
-                      activeTab === tab.id
-                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ${activeTab === tab.id
+                      ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                     }
                   `}
                 >

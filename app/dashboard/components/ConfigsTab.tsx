@@ -4,43 +4,33 @@ import { Info, Lock, Mail, Pencil, Star, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function ConfigsTab() {
-  const [configs, setConfigs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [configs, setConfigs] = useState<any[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>(null);
 
   useEffect(() => {
-    // Mock Load
-    setConfigs([
-      {
-        id: 1,
-        name: 'Gmail Personal',
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: true,
-        user: 'me@gmail.com',
-        fromEmail: 'me@gmail.com',
-        fromName: 'John',
-        isDefault: true,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: 'Work Outlook',
-        host: 'smtp.outlook.com',
-        port: 587,
-        secure: true,
-        user: 'work@corp.com',
-        fromEmail: 'work@corp.com',
-        fromName: 'John Doe',
-        isDefault: false,
-        createdAt: new Date().toISOString(),
-      },
-    ] as any);
+    const load = async () => {
+      try {
+        const res = await fetch('/api/dashboard/configs');
+        const data = await res.json();
+        setLoading(false);
+        setConfigs(data?.configs || []);
+      } catch (err) {
+        console.error('Failed to load configs', err);
+      }
+    };
+
+    load();
   }, []);
 
   const inputClasses =
     'w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-gray-900 dark:text-white transition-all';
-
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center w-full h-full"> Loading... </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div className="flex sm:flex-row flex-col justify-between items-start sm:items-center gap-4 mb-8">
@@ -117,7 +107,26 @@ export default function ConfigsTab() {
             </div>
 
             {!config.isDefault && (
-              <button className="hover:bg-blue-50 dark:hover:bg-blue-900/30 mt-4 py-2 border border-blue-200 dark:border-blue-800 rounded-lg w-full font-medium text-blue-600 dark:text-blue-400 text-sm transition-colors">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(`/api/dashboard/configs/${config.id}`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'default' }),
+                    });
+                    if (res.ok) {
+                      setConfigs(prev => prev.map((c: any) => ({ ...c, isDefault: c.id === config.id })));
+                    } else {
+                      alert('Set default failed');
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    alert('Set default failed');
+                  }
+                }}
+                className="hover:bg-blue-50 dark:hover:bg-blue-900/30 mt-4 py-2 border border-blue-200 dark:border-blue-800 rounded-lg w-full font-medium text-blue-600 dark:text-blue-400 text-sm transition-colors"
+              >
                 Set as Default
               </button>
             )}
